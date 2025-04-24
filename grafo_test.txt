@@ -1,0 +1,18 @@
+[Nodes]
+A 1 0
+B 4 0
+C 2 3
+D 2 8
+E 1 8
+F 3 7
+G 4 4
+H 1 3
+[Segments]
+S1 A B
+S2 B C
+S3 C D
+S4 D E
+S5 E F
+S6 F G
+S7 G H
+S8 H A
