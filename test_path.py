@@ -1,5 +1,4 @@
-from graph import CreateGraph_1
-from path import *
+from graph import CreateGraph
 
 G = CreateGraph_1()
 A = next(n for n in G.nodes if n.name == "A")

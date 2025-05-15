@@ -1,14 +1,18 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
-
 from path import PlotPath
 
 from graph import *
 from test_graph import CreateGraph_1
+from airspace import AirSpace
+from data_loader import load_navpoints, load_segments, load_airports
+from graph import Graph, AddNode, AddSegment
+from node import Node
 
 
 class GraphApp:
     def __init__(self, root):
+        self.airspace = None
         self.color_left_segments = None
         self.delete_segment_popup = None
         self.graph = Graph()
@@ -42,6 +46,7 @@ class GraphApp:
         tk.Button(frame, text="Nuevo Grafo Vacío", command=self.new_graph).grid(row=2, column=3, pady=5)
         tk.Button(frame, text="Ver alcanzables", command=self.show_reachables).grid(row=4, column=0, pady=5)
         tk.Button(frame, text="Camino más corto", command=self.shortest_path_popup).grid(row=4, column=1, pady=5)
+        tk.Button(frame, text="Cargar Airspace Catalunya", command=self.load_airspace).grid(row=5, column=0, pady=5)
 
     def load_example(self):
         self.graph = CreateGraph_1()
@@ -60,6 +65,105 @@ class GraphApp:
             Plot(self.graph)
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo cargar el archivo: {e}")
+
+
+    def plot_airspace(self):
+        """
+        Dibuja el gráfico base del espacio aéreo de Catalunya.
+        """
+        import matplotlib.pyplot as plt
+        plt.figure()
+
+        # Verificar si hay datos cargados
+        if not self.airspace.navpoints:
+            messagebox.showwarning("Advertencia", "No hay datos cargados para Catalunya.")
+            return
+
+        # Dibujar puntos de navegación
+        for nav in self.airspace.navpoints:
+            plt.plot(nav.lon, nav.lat, 'o', color='blue')
+            plt.text(nav.lon, nav.lat, nav.name)
+
+        # Dibujar segmentos
+        for seg in self.airspace.navsegments:
+            x_vals = [seg.origin.lon, seg.destination.lon]
+            y_vals = [seg.origin.lat, seg.destination.lat]
+            plt.plot(x_vals, y_vals, color='gray', linestyle='-', alpha=0.7)
+
+        plt.title("Espacio Aéreo de Catalunya")
+        plt.xlabel("Longitud")
+        plt.ylabel("Latitud")
+        plt.grid(alpha=0.3)
+        plt.show()
+
+    def load_airspace(self):
+        """
+        Carga los datos del espacio aéreo de Cataluña desde los ficheros de texto
+        y genera el grafo conectando los nodos mediante los segmentos.
+        """
+        from graph import Graph, AddSegment
+        from node import Node
+
+        # Crear un nuevo grafo vacío
+        self.graph = Graph()
+        id_to_node = {}
+
+        try:
+            # Cargar nodos
+            navpoints = load_navpoints("Cat_nav.txt")
+            for np in navpoints:
+                node = Node(np['name'], np['lat'], np['lon'])
+                AddNode(self.graph, node)
+                id_to_node[np['id']] = node
+
+            # Cargar segmentos
+            segments = load_segments("Cat_seg.txt")
+
+            # Asegurarnos de que TODOS los segmentos se creen y conecten los nodos
+            for seg in segments:
+                origin = id_to_node.get(seg['origin_id'])
+                dest = id_to_node.get(seg['dest_id'])
+
+                if origin and dest:
+                    segment_name = f"{origin.name}-{dest.name}"
+                    AddSegment(self.graph, segment_name, origin.name, dest.name)
+
+            # Mostrar el grafo completo con todos los segmentos
+            self.plot_graph()
+            messagebox.showinfo("Carga Completa", "Espacio aéreo de Cataluña cargado correctamente.")
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al cargar los datos: {e}")
+
+    def plot_graph(self):
+        """
+        Dibuja el grafo cargado, mostrando todos los nodos y segmentos conectados.
+        """
+        import matplotlib.pyplot as plt
+
+        if not self.graph.nodes:
+            messagebox.showwarning("Sin datos", "No hay datos cargados para mostrar.")
+            return
+
+        plt.figure()
+
+        # Dibujar nodos
+        for node in self.graph.nodes:
+            plt.plot(node.x, node.y, 'o', color='blue')
+            plt.text(node.x, node.y, node.name)
+
+        # Dibujar TODOS los segmentos
+        for segment in self.graph.segments:
+            if segment.origin and segment.destination:
+                x_vals = [segment.origin.x, segment.destination.x]
+                y_vals = [segment.origin.y, segment.destination.y]
+                plt.plot(x_vals, y_vals, color='gray', linestyle='-', alpha=0.7)
+
+        plt.title("Espacio Aéreo de Cataluña - Todos los Segmentos Conectados")
+        plt.xlabel("Longitud")
+        plt.ylabel("Latitud")
+        plt.grid(alpha=0.3)
+        plt.show()
 
     def save_to_file(self):
         path = filedialog.asksaveasfilename(title="Guardar grafo como", defaultextension=".txt")
@@ -154,19 +258,44 @@ class GraphApp:
         tk.Button(win, text="Eliminar", command=delete).grid(row=1, columnspan=2)
 
     def show_reachables(self):
-        name = self.node_entry.get()
-        nodes = GetReachableNodes(self.graph, name)
-        if not nodes:
-            messagebox.showwarning("Nodo no encontrado", "No se encontró el nodo.")
-            return
-        import matplotlib.pyplot as plt
-        plt.figure()
-        for n in self.graph.nodes:
-            color = "green" if n in nodes else "gray"
-            plt.plot(n.x, n.y, 'o', color=color)
-            plt.text(n.x, n.y, n.name)
-        plt.title(f"Nodos alcanzables desde {name}")
-        plt.show()
+        win = tk.Toplevel(self.root)
+        win.title("Ver alcanzables directos")
+
+        tk.Label(win, text="Nodo:").grid(row=0, column=0, padx=10, pady=5)
+        entry_node = tk.Entry(win)
+        entry_node.grid(row=0, column=1, padx=10, pady=5)
+
+        def calculate_reachables():
+            node_name = entry_node.get()
+
+
+            start_node = next((n for n in self.graph.nodes if n.name == node_name), None)
+            if not start_node:
+                messagebox.showwarning("Nodo no encontrado", f"No se encontró el nodo '{node_name}'.")
+                return
+
+            reachable_nodes = start_node.neighbors
+
+            import matplotlib.pyplot as plt
+            plt.figure()
+
+            for n in self.graph.nodes:
+                color = "green" if n in reachable_nodes else "gray"
+                plt.plot(n.x, n.y, 'o', color=color)
+                plt.text(n.x, n.y, n.name)
+
+            for s in self.graph.segments:
+                x_vals = [s.origin.x, s.destination.x]
+                y_vals = [s.origin.y, s.destination.y]
+
+                color = "green" if (s.origin == start_node and s.destination in reachable_nodes) else "gray"
+                plt.plot(x_vals, y_vals, color=color, linestyle='-', alpha=0.7)
+
+            plt.title(f"Nodos directamente alcanzables desde '{node_name}'")
+            plt.show()
+            win.destroy()
+
+        tk.Button(win, text="Ver alcanzables", command=calculate_reachables).grid(row=1, columnspan=2, pady=10)
 
     def shortest_path_popup(self):
         win = tk.Toplevel(self.root)

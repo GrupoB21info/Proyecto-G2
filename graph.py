@@ -14,15 +14,26 @@ def AddNode(g, n):
     g.nodes.append(n)
     return True
 
-def AddSegment(g, name, originName, destName):
-    origin = next((n for n in g.nodes if n.name == originName), None)
-    dest = next((n for n in g.nodes if n.name == destName), None)
+def AddSegment(graph, name, origin_name, dest_name):
+    """
+    Crea un segmento entre dos nodos y los conecta como vecinos.
+    """
+    origin = next((n for n in graph.nodes if n.name == origin_name), None)
+    dest = next((n for n in graph.nodes if n.name == dest_name), None)
+
     if origin and dest:
-        seg = Segment(name, origin, dest)
-        g.segments.append(seg)
+        # Crear el segmento
+        segment = Segment(name, origin, dest)
+        graph.segments.append(segment)
+
+        # Conectar nodos como vecinos
         AddNeighbor(origin, dest)
+        AddNeighbor(dest, origin)  # Bidireccional
+
         return True
+
     return False
+
 
 def GetClosest(g, x, y):
     return min(g.nodes, key=lambda n: math.sqrt((n.x - x) ** 2 + (n.y - y) ** 2))
@@ -35,7 +46,8 @@ def Plot(g):
     for s in g.segments:
         x_vals = [s.origin.x, s.destination.x]
         y_vals = [s.origin.y, s.destination.y]
-        plt.plot(x_vals, y_vals, 'k-')
+        color = getattr(s, 'color', 'black')
+        plt.plot(x_vals, y_vals, color=color, linewidth=2)
         cx = (s.origin.x + s.destination.x) / 2
         cy = (s.origin.y + s.destination.y) / 2
         plt.text(cx, cy, f"{s.cost:.2f}")
@@ -95,6 +107,7 @@ def LoadGraphFromFile(filename):
     return g
 
 
+
 from path import Path
 
 def FindShortestPath(G, origin_name, dest_name):
@@ -120,14 +133,21 @@ def FindShortestPath(G, origin_name, dest_name):
     return None
 
 def GetReachableNodes(G, start_name):
+    """
+    Retorna una lista de nodos alcanzables desde el nodo inicial.
+    """
     start = next((n for n in G.nodes if n.name == start_name), None)
     if not start:
         return []
+
     visited = set()
     queue = [start]
+
     while queue:
         node = queue.pop(0)
         if node not in visited:
             visited.add(node)
             queue.extend([n for n in node.neighbors if n not in visited])
+
     return list(visited)
+
