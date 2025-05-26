@@ -24,8 +24,7 @@ class Path:
 
 def PlotPath(graph, path):
     import matplotlib.pyplot as plt
-    plt.figure()
-
+    plt.clf()
     for node in graph.nodes:
         plt.plot(node.x, node.y, 'o', color='gray')
         plt.text(node.x, node.y, node.name)

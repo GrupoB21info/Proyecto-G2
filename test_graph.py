@@ -40,40 +40,40 @@ def CreateGraph_1():
     AddSegment(G, "LK","L","K")
     AddSegment(G, "LF","L","F")
     return G
+def prueba1():
+    G = CreateGraph_1()
+    Plot(G)
+    PlotNode(G, "C")
+    n = GetClosest(G,15,5)
+    print(n.name)  # J
+    n = GetClosest(G,8,19)
+    print(n.name)  # B
+    # Prueba de carga desde archivo
+    print("\nProbando carga desde archivo...")
+    filename = "grafo_test.txt"
 
-G = CreateGraph_1()
-Plot(G)
-PlotNode(G, "C")
-n = GetClosest(G,15,5)
-print(n.name)  # J
-n = GetClosest(G,8,19)
-print(n.name)  # B
-# Prueba de carga desde archivo
-print("\nProbando carga desde archivo...")
-filename = "grafo_test.txt"
+    with open(filename, "w") as f:
+        f.write("""[Nodes]
+    A 1 0
+    B 4 0
+    C 2 3
+    D 2 8
+    E 1 8
+    F 3 7
+    G 4 4
+    H 1 3
+    [Segments]
+    S1 A B
+    S2 B C
+    S3 C D
+    S4 D E
+    S5 E F
+    S6 F G
+    S7 G H
+    S8 H A
+    """)
 
-with open(filename, "w") as f:
-    f.write("""[Nodes]
-A 1 0
-B 4 0
-C 2 3
-D 2 8
-E 1 8
-F 3 7
-G 4 4
-H 1 3
-[Segments]
-S1 A B
-S2 B C
-S3 C D
-S4 D E
-S5 E F
-S6 F G
-S7 G H
-S8 H A
-""")
-
-G2 = LoadGraphFromFile(filename)
-Plot(G2)
-PlotNode(G2, "A")
-print("Nodo más cercano a (1,1):", GetClosest(G2, 1, 1).name)
+    G2 = LoadGraphFromFile(filename)
+    Plot(G2)
+    PlotNode(G2, "A")
+    print("Nodo más cercano a (1,1):", GetClosest(G2, 1, 1).name)

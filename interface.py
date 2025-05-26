@@ -4,7 +4,7 @@ from path import PlotPath
 
 from graph import *
 from test_graph import CreateGraph_1
-from airspace import AirSpace
+#from airspace import AirSpace
 from data_loader import load_navpoints, load_segments, load_airports
 from graph import Graph, AddNode, AddSegment
 from node import Node
@@ -49,10 +49,12 @@ class GraphApp:
         tk.Button(frame, text="Cargar Airspace Catalunya", command=self.load_airspace).grid(row=5, column=0, pady=5)
 
     def load_example(self):
+        plt.clf()
         self.graph = CreateGraph_1()
         Plot(self.graph)
 
     def load_custom(self):
+        plt.clf()
         self.graph = CreateGraph_2()
         Plot(self.graph)
 
@@ -74,17 +76,15 @@ class GraphApp:
         import matplotlib.pyplot as plt
         plt.figure()
 
-        # Verificar si hay datos cargados
         if not self.airspace.navpoints:
             messagebox.showwarning("Advertencia", "No hay datos cargados para Catalunya.")
             return
 
-        # Dibujar puntos de navegación
         for nav in self.airspace.navpoints:
             plt.plot(nav.lon, nav.lat, 'o', color='blue')
             plt.text(nav.lon, nav.lat, nav.name)
 
-        # Dibujar segmentos
+
         for seg in self.airspace.navsegments:
             x_vals = [seg.origin.lon, seg.destination.lon]
             y_vals = [seg.origin.lat, seg.destination.lat]
@@ -97,29 +97,24 @@ class GraphApp:
         plt.show()
 
     def load_airspace(self):
-        """
-        Carga los datos del espacio aéreo de Cataluña desde los ficheros de texto
-        y genera el grafo conectando los nodos mediante los segmentos.
-        """
+
         from graph import Graph, AddSegment
         from node import Node
-
+        plt.clf()
         # Crear un nuevo grafo vacío
         self.graph = Graph()
         id_to_node = {}
 
         try:
-            # Cargar nodos
+
             navpoints = load_navpoints("Cat_nav.txt")
             for np in navpoints:
                 node = Node(np['name'], np['lat'], np['lon'])
                 AddNode(self.graph, node)
                 id_to_node[np['id']] = node
 
-            # Cargar segmentos
             segments = load_segments("Cat_seg.txt")
 
-            # Asegurarnos de que TODOS los segmentos se creen y conecten los nodos
             for seg in segments:
                 origin = id_to_node.get(seg['origin_id'])
                 dest = id_to_node.get(seg['dest_id'])
@@ -128,7 +123,7 @@ class GraphApp:
                     segment_name = f"{origin.name}-{dest.name}"
                     AddSegment(self.graph, segment_name, origin.name, dest.name)
 
-            # Mostrar el grafo completo con todos los segmentos
+
             self.plot_graph()
             messagebox.showinfo("Carga Completa", "Espacio aéreo de Cataluña cargado correctamente.")
 
@@ -136,23 +131,17 @@ class GraphApp:
             messagebox.showerror("Error", f"Error al cargar los datos: {e}")
 
     def plot_graph(self):
-        """
-        Dibuja el grafo cargado, mostrando todos los nodos y segmentos conectados.
-        """
+
         import matplotlib.pyplot as plt
 
         if not self.graph.nodes:
             messagebox.showwarning("Sin datos", "No hay datos cargados para mostrar.")
             return
 
-        plt.figure()
-
-        # Dibujar nodos
         for node in self.graph.nodes:
             plt.plot(node.x, node.y, 'o', color='blue')
             plt.text(node.x, node.y, node.name)
 
-        # Dibujar TODOS los segmentos
         for segment in self.graph.segments:
             if segment.origin and segment.destination:
                 x_vals = [segment.origin.x, segment.destination.x]
@@ -258,6 +247,7 @@ class GraphApp:
         tk.Button(win, text="Eliminar", command=delete).grid(row=1, columnspan=2)
 
     def show_reachables(self):
+        plt.clf()
         win = tk.Toplevel(self.root)
         win.title("Ver alcanzables directos")
 
@@ -277,7 +267,7 @@ class GraphApp:
             reachable_nodes = start_node.neighbors
 
             import matplotlib.pyplot as plt
-            plt.figure()
+
 
             for n in self.graph.nodes:
                 color = "green" if n in reachable_nodes else "gray"

@@ -1,8 +1,5 @@
 def load_navpoints(filename):
-    """
-    Lee Cat_nav.txt, ignora cabeceras y líneas vacías,
-    y devuelve lista de nodos con atributos: id, name, lat, lon.
-    """
+
     navpoints = []
     with open(filename, 'r', encoding='utf-8') as f:
         for line in f:
@@ -24,16 +21,13 @@ def load_navpoints(filename):
     return navpoints
 
 def load_segments(filename):
-    """
-    Lee Cat_seg.txt, ignora cabeceras y líneas vacías,
-    y devuelve lista de segmentos con: origin_id, dest_id, distancia.
-    """
+
     segments = []
     with open(filename, 'r', encoding='utf-8') as f:
         for line in f:
             line = line.strip()
             if not line or not line[0].isdigit():
-                # Ignorar líneas vacías y encabezados (que no empiezan con dígito)
+
                 continue
 
             parts = line.split()
@@ -48,10 +42,7 @@ def load_segments(filename):
     return segments
 
 def load_airports(filename):
-    """
-    Lee Cat_aer.txt, ignora encabezados y líneas vacías,
-    y devuelve lista de aeropuertos con nombre y listas SIDs y STARs.
-    """
+
     airports = []
     with open(filename, 'r', encoding='utf-8') as f:
         current_airport = None
@@ -82,7 +73,7 @@ def load_airports(filename):
             elif 'A' in line and '.' in line:
                 stars.append(line)
 
-        # Agregar último aeropuerto
+
         if current_airport:
             airports.append({'name': current_airport, 'SIDs': sids, 'STARs': stars})
 

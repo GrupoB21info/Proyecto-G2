@@ -39,7 +39,6 @@ def GetClosest(g, x, y):
     return min(g.nodes, key=lambda n: math.sqrt((n.x - x) ** 2 + (n.y - y) ** 2))
 
 def Plot(g):
-    plt.figure()
     for node in g.nodes:
         plt.plot(node.x, node.y, 'o')
         plt.text(node.x, node.y, node.name)
