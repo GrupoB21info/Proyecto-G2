@@ -149,4 +149,3 @@ def GetReachableNodes(G, start_name):
             queue.extend([n for n in node.neighbors if n not in visited])
 
     return list(visited)
-

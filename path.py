@@ -1,5 +1,5 @@
 from node import Distance
-
+#import matplotlib.pyplot as plt
 class Path:
     def __init__(self, nodes):
         self.nodes = nodes  # Lista de nodos
@@ -23,18 +23,19 @@ class Path:
         return Path(self.nodes + [node])
 
 def PlotPath(graph, path):
-    fig, ax = plt.subplots()
+    import matplotlib.pyplot as plt
+    plt.clf()
     for node in graph.nodes:
-        ax.plot(node.x, node.y, 'o', color='gray')
-        ax.text(node.x, node.y, node.name)
+        plt.plot(node.x, node.y, 'o', color='gray')
+        plt.text(node.x, node.y, node.name)
 
     for seg in graph.segments:
-        ax.plot([seg.origin.x, seg.destination.x], [seg.origin.y, seg.destination.y], 'k--', alpha=0.3)
+        plt.plot([seg.origin.x, seg.destination.x], [seg.origin.y, seg.destination.y], 'k--', alpha=0.3)
 
     for i in range(len(path.nodes) - 1):
         n1 = path.nodes[i]
         n2 = path.nodes[i+1]
-        ax.plot([n1.x, n2.x], [n1.y, n2.y], 'r-', linewidth=2)
+        plt.plot([n1.x, n2.x], [n1.y, n2.y], 'r-', linewidth=2)
 
-    ax.set_title("Camino más corto")
-    return fig
+    plt.title("Camino más corto")
+    plt.show()
