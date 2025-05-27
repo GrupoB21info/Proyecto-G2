@@ -1,57 +1,118 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from path import PlotPath
-
 from graph import *
 from test_graph import CreateGraph_1
-#from airspace import AirSpace
 from data_loader import load_navpoints, load_segments, load_airports
 from graph import Graph, AddNode, AddSegment
 from node import Node
 
 
+from tkinter import PhotoImage
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+import os
+from airspace import AirSpace
+from kml_exporter import export_path_to_kml
+
+
 class GraphApp:
     def __init__(self, root):
+        self.root = root
+        self.graph = Graph()
+        self.ruta_actual = None
         self.airspace = None
         self.color_left_segments = None
         self.delete_segment_popup = None
-        self.graph = Graph()
-        self.root = root
+        self.canvas_widget = None
+
         self.root.title("Explorador de Rutas Aéreas")
+        self.root.geometry("1200x800")
+        self.root.configure(bg="#ffe6f0")
+
         self.create_widgets()
 
     def create_widgets(self):
 
         frame = tk.Frame(self.root)
         frame.pack(pady=10)
+        control_frame = tk.Frame(self.root, bg="#ffe6f0")
+        control_frame.pack(pady=10)
+        self.plot_frame = tk.Frame(self.root, bg="#ffe6f0")
+        self.plot_frame.pack(fill=tk.BOTH, expand=True)
+        tk.Button(control_frame, text="Mostrar en Google Earth", bg="#ffb6c1", fg="#4b2e2e",
+                  font=("Helvetica", 10, "bold"), relief="flat", command=self.mostrar_en_google_earth).grid(row=6,
+                                                                                                            column=0,
+                                                                                                            pady=5)
+        tk.Button(control_frame, text="Mostrar Grafo Ejemplo", bg="#ffb6c1", fg="#4b2e2e",
+                  font=("Helvetica", 10, "bold"), relief="flat", command=self.load_example).grid(row=0, column=0,
+                                                                                                 padx=5)
+        tk.Button(frame, text="Mostrar Grafo Inventado",  bg="#ffb6c1", fg="#4b2e2e",
+                  font=("Helvetica", 10, "bold"), relief="flat", command=self.load_custom).grid(row=0, column=1,
+                                                                                                 padx=5)
+        tk.Button(frame, text="Cargar Grafo desde Archivo",  bg="#ffb6c1", fg="#4b2e2e",
+                  font=("Helvetica", 10, "bold"), relief="flat", command=self.load_from_file).grid(row=0, column=2,
+                                                                                                 padx=5)
+        tk.Button(frame, text="Guardar Grafo en Archivo",  bg="#ffb6c1", fg="#4b2e2e",
+                  font=("Helvetica", 10, "bold"), relief="flat", command=self.save_to_file).grid(row=0, column=3,
+                                                                                                 padx=5)
+        tk.Button(frame, text="Borrar Segmento",  bg="#ffb6c1", fg="#4b2e2e",
+                  font=("Helvetica", 10, "bold"), relief="flat", command=self.delete_segment_popup).grid(row=3, column=0,
+                                                                                                 padx=5)
 
-        tk.Button(frame, text="Mostrar Grafo Ejemplo", command=self.load_example).grid(row=0, column=0, padx=5)
-        tk.Button(frame, text="Mostrar Grafo Inventado", command=self.load_custom).grid(row=0, column=1, padx=5)
-        tk.Button(frame, text="Cargar Grafo desde Archivo", command=self.load_from_file).grid(row=0, column=2, padx=5)
-        tk.Button(frame, text="Guardar Grafo en Archivo", command=self.save_to_file).grid(row=0, column=3, padx=5)
-        tk.Button(frame, text="Borrar Segmento", command=self.delete_segment_popup).grid(row=3, column=0, pady=5)
-
-        tk.Label(frame, text="Nodo:").grid(row=1, column=0)
-        self.node_entry = tk.Entry(frame)
+        tk.Label(control_frame, text="Nodo:", bg="#ffe6f0", fg="#4b2e2e").grid(row=1, column=0)
+        self.node_entry = tk.Entry(control_frame, bg="#fff0f5", fg="#4b2e2e")
         self.node_entry.grid(row=1, column=1)
-        tk.Button(frame, text="Ver Vecinos", command=self.show_neighbors).grid(row=1, column=2, padx=5)
+        tk.Button(frame, text="Ver Vecinos", bg="#ffb6c1", fg="#4b2e2e",
+                  font=("Helvetica", 10, "bold"), relief="flat", command=self.show_neighbors).grid(row=1, column=2,
+                                                                                                 padx=5)
 
 
-        tk.Button(frame, text="Añadir Nodo", command=self.add_node_popup).grid(row=2, column=0, pady=5)
+        tk.Button(frame, text="Añadir Nodo",  bg="#ffb6c1", fg="#4b2e2e",
+                  font=("Helvetica", 10, "bold"), relief="flat", command=self.add_node_popup).grid(row=2, column=0,
+                                                                                                 padx=5)
 
-        tk.Button(frame, text="Añadir Segmento", command=self.add_segment_popup).grid(row=2, column=1, pady=5)
+        tk.Button(frame, text="Añadir Segmento",  bg="#ffb6c1", fg="#4b2e2e",
+                  font=("Helvetica", 10, "bold"), relief="flat", command=self.add_segment_popup).grid(row=2, column=1,
+                                                                                                 padx=5)
 
-        tk.Button(frame, text="Borrar Nodo", command=self.delete_node_popup).grid(row=2, column=2, pady=5)
+        tk.Button(frame, text="Borrar Nodo",  bg="#ffb6c1", fg="#4b2e2e",
+                  font=("Helvetica", 10, "bold"), relief="flat", command=self.delete_node_popup).grid(row=2, column=2,
+                                                                                                 padx=5)
 
-        tk.Button(frame, text="Nuevo Grafo Vacío", command=self.new_graph).grid(row=2, column=3, pady=5)
-        tk.Button(frame, text="Ver alcanzables", command=self.show_reachables).grid(row=4, column=0, pady=5)
-        tk.Button(frame, text="Camino más corto", command=self.shortest_path_popup).grid(row=4, column=1, pady=5)
-        tk.Button(frame, text="Cargar Airspace Catalunya", command=self.load_airspace).grid(row=5, column=0, pady=5)
+        tk.Button(frame, text="Nuevo Grafo Vacío",  bg="#ffb6c1", fg="#4b2e2e",
+                  font=("Helvetica", 10, "bold"), relief="flat", command=self.new_graph).grid(row=2, column=3,
+                                                                                                 padx=5)
+        tk.Button(frame, text="Ver alcanzables",  bg="#ffb6c1", fg="#4b2e2e",
+                  font=("Helvetica", 10, "bold"), relief="flat", command=self.show_reachables).grid(row=4, column=0,
+                                                                                                 padx=5)
+        tk.Button(frame, text="Camino más corto",  bg="#ffb6c1", fg="#4b2e2e",
+                  font=("Helvetica", 10, "bold"), relief="flat", command=self.shortest_path_popup).grid(row=4, column=1,
+                                                                                                 padx=5)
+        tk.Button(frame, text="Cargar Airspace Catalunya",  bg="#ffb6c1", fg="#4b2e2e",
+                  font=("Helvetica", 10, "bold"), relief="flat", command=self.load_airspace).grid(row=5, column=0,
+                                                                                                 padx=5)
+
+
+
 
     def load_example(self):
-        plt.clf()
+        from test_graph import CreateGraph_1
         self.graph = CreateGraph_1()
-        Plot(self.graph)
+        path = self.graph.Dijkstra("A", "E")
+        if path:
+            self.draw_path(path)
+        else:
+            messagebox.showinfo("Info", "No se encontró camino.")
+
+    def draw_path(self, path):
+        fig = PlotPath(self.graph, path)
+        if self.canvas_widget:
+            self.canvas_widget.get_tk_widget().destroy()
+
+        self.canvas_widget = FigureCanvasTkAgg(fig, master=self.plot_frame)
+        self.canvas_widget.draw()
+        self.canvas_widget.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
     def load_custom(self):
         plt.clf()
@@ -174,6 +235,26 @@ class GraphApp:
         name = self.node_entry.get()
         if not PlotNode(self.graph, name):
             messagebox.showwarning("No encontrado", f"Nodo '{name}' no existe.")
+
+    from kml_exporter import export_path_to_kml  # asegúrate de importar esto
+
+    def mostrar_en_google_earth(self):
+        if not self.ruta_actual:
+            messagebox.showerror("Ruta no disponible", "Primero calcula una ruta.")
+            return
+
+        filename = filedialog.asksaveasfilename(
+            defaultextension=".kml",
+            filetypes=[("KML files", "*.kml")],
+            title="Guardar archivo KML"
+        )
+
+        if filename:
+            export_path_to_kml(self.ruta_actual, filename)
+            try:
+                os.startfile(filename)  # Abre en Windows
+            except Exception:
+                messagebox.showinfo("Archivo KML generado", f"Guardado en: {filename}\\nÁbrelo manualmente.")
 
     def add_node_popup(self):
         win = tk.Toplevel(self.root)
@@ -300,8 +381,10 @@ class GraphApp:
         def calc():
             path = FindShortestPath(self.graph, e1.get(), e2.get())
             if path:
+                self.ruta_actual = path  # 👈 guardamos la ruta
                 PlotPath(self.graph, path)
             else:
+                self.ruta_actual = None  # opcional: limpiar si no hay ruta
                 messagebox.showwarning("Sin camino", "No hay camino posible.")
             win.destroy()
 

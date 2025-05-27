@@ -23,19 +23,18 @@ class Path:
         return Path(self.nodes + [node])
 
 def PlotPath(graph, path):
-    import matplotlib.pyplot as plt
-    plt.clf()
+    fig, ax = plt.subplots()
     for node in graph.nodes:
-        plt.plot(node.x, node.y, 'o', color='gray')
-        plt.text(node.x, node.y, node.name)
+        ax.plot(node.x, node.y, 'o', color='gray')
+        ax.text(node.x, node.y, node.name)
 
     for seg in graph.segments:
-        plt.plot([seg.origin.x, seg.destination.x], [seg.origin.y, seg.destination.y], 'k--', alpha=0.3)
+        ax.plot([seg.origin.x, seg.destination.x], [seg.origin.y, seg.destination.y], 'k--', alpha=0.3)
 
     for i in range(len(path.nodes) - 1):
         n1 = path.nodes[i]
         n2 = path.nodes[i+1]
-        plt.plot([n1.x, n2.x], [n1.y, n2.y], 'r-', linewidth=2)
+        ax.plot([n1.x, n2.x], [n1.y, n2.y], 'r-', linewidth=2)
 
-    plt.title("Camino más corto")
-    plt.show()
+    ax.set_title("Camino más corto")
+    return fig
