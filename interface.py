@@ -1,7 +1,7 @@
 import tkinter as tk
+#from graph import CreateGraph_2
 from tkinter import filedialog, messagebox
 from path import PlotPath
-
 from graph import *
 from test_graph import CreateGraph_1
 #from airspace import AirSpace
@@ -10,6 +10,9 @@ from graph import Graph, AddNode, AddSegment
 from node import Node
 import os
 from kml_exporter import export_path_to_kml
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
+
 
 class GraphApp:
     def __init__(self, root):
@@ -21,11 +24,14 @@ class GraphApp:
         self.root.title("Explorador de Rutas Aéreas")
         self.create_widgets()
         self.ruta_actual= None
+        self.canvas_widget = None
 
     def create_widgets(self):
 
         frame = tk.Frame(self.root)
         frame.pack(pady=10)
+        self.canvas_frame = tk.Frame(self.root)
+        self.canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
         tk.Button(frame, text="Mostrar Grafo Ejemplo", command=self.load_example).grid(row=0, column=0, padx=5)
         tk.Button(frame, text="Mostrar Grafo Inventado", command=self.load_custom).grid(row=0, column=1, padx=5)
@@ -49,18 +55,30 @@ class GraphApp:
         tk.Button(frame, text="Ver alcanzables", command=self.show_reachables).grid(row=4, column=0, pady=5)
         tk.Button(frame, text="Camino más corto", command=self.shortest_path_popup).grid(row=4, column=1, pady=5)
         tk.Button(frame, text="Cargar Airspace Catalunya", command=self.load_airspace).grid(row=5, column=0, pady=5)
-        btn_google_earth = tk.Button(root, text="Mostrar en Google Earth", command=self.mostrar_en_google_earth)
-        btn_google_earth.pack(pady=10)
+        tk.Button(frame, text="Mostrar en Google Earth", command=self.mostrar_en_google_earth).grid(row=4, column=3,
+                                                                                                    pady=5)
+        tk.Button(frame, text="Cargar Airspace España", command=self.load_airspace_spain).grid(row=5, column=1, pady=5)
+        tk.Button(frame, text="Cargar Airspace Europa", command=self.load_airspace_europe).grid(row=5, column=2, pady=5)
+
+    def mostrar_figura_en_canvas(self, fig):
+        if self.canvas_widget:
+            self.canvas_widget.get_tk_widget().destroy()
+        self.canvas_widget = FigureCanvasTkAgg(fig, master=self.canvas_frame)
+        self.canvas_widget.draw()
+        self.canvas_widget.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
     def load_example(self):
         plt.clf()
         self.graph = CreateGraph_1()
-        Plot(self.graph)
+        fig = Plot(self.graph)
+        self.mostrar_figura_en_canvas(fig)
+
 
     def load_custom(self):
         plt.clf()
         self.graph = CreateGraph_2()
-        Plot(self.graph)
+        fig = Plot(self.graph)
+        self.mostrar_figura_en_canvas(fig)
 
     def load_from_file(self):
         path = filedialog.askopenfilename(title="Selecciona archivo de grafo")
@@ -74,11 +92,9 @@ class GraphApp:
 
 
     def plot_airspace(self):
-        """
-        Dibuja el gráfico base del espacio aéreo de Catalunya.
-        """
+
         import matplotlib.pyplot as plt
-        plt.figure()
+
 
         if not self.airspace.navpoints:
             messagebox.showwarning("Advertencia", "No hay datos cargados para Catalunya.")
@@ -98,8 +114,8 @@ class GraphApp:
         plt.xlabel("Longitud")
         plt.ylabel("Latitud")
         plt.grid(alpha=0.3)
-        plt.show()
-
+        fig = plt.gcf()
+        self.mostrar_figura_en_canvas(fig)
 
     def mostrar_en_google_earth(self):
         global ruta_actual
@@ -149,14 +165,15 @@ class GraphApp:
 
 
             self.plot_graph()
-            messagebox.showinfo("Carga Completa", "Espacio aéreo de Cataluña cargado correctamente.")
+            messagebox.showinfo("Carga Completa", "Espacio aéreo cargado correctamente.")
 
         except Exception as e:
             messagebox.showerror("Error", f"Error al cargar los datos: {e}")
 
     def plot_graph(self):
-
         import matplotlib.pyplot as plt
+        plt.figure(figsize=(14, 10))
+        plt.clf()
 
         if not self.graph.nodes:
             messagebox.showwarning("Sin datos", "No hay datos cargados para mostrar.")
@@ -164,7 +181,7 @@ class GraphApp:
 
         for node in self.graph.nodes:
             plt.plot(node.x, node.y, 'o', color='blue')
-            plt.text(node.x, node.y, node.name)
+            plt.text(node.x + 0.1, node.y + 0.1, node.name, fontsize=7)
 
         for segment in self.graph.segments:
             if segment.origin and segment.destination:
@@ -172,11 +189,21 @@ class GraphApp:
                 y_vals = [segment.origin.y, segment.destination.y]
                 plt.plot(x_vals, y_vals, color='gray', linestyle='-', alpha=0.7)
 
-        plt.title("Espacio Aéreo de Cataluña - Todos los Segmentos Conectados")
+        if self.graph.nodes:
+            xs = [n.x for n in self.graph.nodes]
+            ys = [n.y for n in self.graph.nodes]
+            plt.xlim(min(xs) - 1, max(xs) + 1)
+            plt.ylim(min(ys) - 1, max(ys) + 1)
+            import numpy as np
+            plt.xticks(np.arange(min(xs) - 1, max(xs) + 1, 1))
+            plt.yticks(np.arange(min(ys) - 1, max(ys) + 1, 1))
+
+        plt.title("Espacio Aéreo - Todos los Segmentos Conectados")
         plt.xlabel("Longitud")
         plt.ylabel("Latitud")
         plt.grid(alpha=0.3)
-        plt.show()
+        fig = plt.gcf()
+        self.mostrar_figura_en_canvas(fig)
 
     def save_to_file(self):
         path = filedialog.asksaveasfilename(title="Guardar grafo como", defaultextension=".txt")
@@ -195,9 +222,11 @@ class GraphApp:
             messagebox.showerror("Error", f"No se pudo guardar el archivo: {e}")
 
     def show_neighbors(self):
+        plt.clf()
         name = self.node_entry.get()
-        if not PlotNode(self.graph, name):
-            messagebox.showwarning("No encontrado", f"Nodo '{name}' no existe.")
+        fig = PlotNode(self.graph, name)
+        if fig:
+            self.mostrar_figura_en_canvas(fig)
 
     def add_node_popup(self):
         win = tk.Toplevel(self.root)
@@ -306,7 +335,8 @@ class GraphApp:
                 plt.plot(x_vals, y_vals, color=color, linestyle='-', alpha=0.7)
 
             plt.title(f"Nodos directamente alcanzables desde '{node_name}'")
-            plt.show()
+            fig = plt.gcf()
+            self.mostrar_figura_en_canvas(fig)
             win.destroy()
 
         tk.Button(win, text="Ver alcanzables", command=calculate_reachables).grid(row=1, columnspan=2, pady=10)
@@ -326,7 +356,8 @@ class GraphApp:
             path = FindShortestPath(self.graph, e1.get(), e2.get())
             if path:
                 self.ruta_actual = path
-                PlotPath(self.graph, path)
+                fig = PlotPath(self.graph, path)
+                self.mostrar_figura_en_canvas(fig)
             else:
                 messagebox.showwarning("Sin camino", "No hay camino posible.")
             win.destroy()
@@ -338,40 +369,82 @@ class GraphApp:
         messagebox.showinfo("Nuevo", "Grafo vacío creado.")
 
 
-def CreateGraph_2():
-    G = Graph()
-    AddNode(G, Node("X", 1, 1))
-    AddNode(G, Node("Y", 4, 1))
-    AddNode(G, Node("Z", 2.5, 4))
-    AddSegment(G, "XY", "X", "Y")
-    AddSegment(G, "YZ", "Y", "Z")
-    AddSegment(G, "ZX", "Z", "X")
-    return G
 
-def delete_segment_popup(self):
-    win = tk.Toplevel(self.root)
-    win.title("Borrar Segmento")
-    tk.Label(win, text="Nombre del Segmento").grid(row=0, column=0)
-    e = tk.Entry(win)
-    e.grid(row=0, column=1)
 
-    def delete():
-        name = e.get()
-        found = False
-        for s in self.graph.segments:
-            if s.name == name:
-                self.graph.segments.remove(s)
-                if s.destination in s.origin.neighbors:
-                    s.origin.neighbors.remove(s.destination)
-                found = True
-                break
-        if found:
-            messagebox.showinfo("Eliminado", "Segmento eliminado.")
-        else:
-            messagebox.showwarning("No encontrado", "Segmento no existe.")
-        win.destroy()
+    def delete_segment_popup(self):
+        win = tk.Toplevel(self.root)
+        win.title("Borrar Segmento")
+        tk.Label(win, text="Nombre del Segmento").grid(row=0, column=0)
+        e = tk.Entry(win)
+        e.grid(row=0, column=1)
 
-    tk.Button(win, text="Eliminar", command=delete).grid(row=1, columnspan=2)
+        def delete():
+            name = e.get()
+            found = False
+            for s in self.graph.segments:
+                if s.name == name:
+                    self.graph.segments.remove(s)
+                    if s.destination in s.origin.neighbors:
+                        s.origin.neighbors.remove(s.destination)
+                    found = True
+                    break
+            if found:
+                messagebox.showinfo("Eliminado", "Segmento eliminado.")
+            else:
+                messagebox.showwarning("No encontrado", "Segmento no existe.")
+            win.destroy()
+
+        tk.Button(win, text="Eliminar", command=delete).grid(row=1, columnspan=2)
+
+    def load_airspace_spain(self):
+        plt.clf()
+        self.graph = Graph()
+        id_to_node = {}
+
+        try:
+            navpoints = load_navpoints("Spain_nav.txt")
+            for np in navpoints:
+                node = Node(np['name'], np['lat'], np['lon'])
+                AddNode(self.graph, node)
+                id_to_node[np['id']] = node
+
+            segments = load_segments("Spain_seg.txt")
+            for seg in segments:
+                origin = id_to_node.get(seg['origin_id'])
+                dest = id_to_node.get(seg['dest_id'])
+                if origin and dest:
+                    segment_name = f"{origin.name}-{dest.name}"
+                    AddSegment(self.graph, segment_name, origin.name, dest.name)
+
+            self.plot_graph()
+            messagebox.showinfo("Carga Completa", "Espacio aéreo de España cargado correctamente.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al cargar los datos de España: {e}")
+
+    def load_airspace_europe(self):
+        plt.clf()
+        self.graph = Graph()
+        id_to_node = {}
+
+        try:
+            navpoints = load_navpoints("Europe_nav.txt")
+            for np in navpoints:
+                node = Node(np['name'], np['lat'], np['lon'])
+                AddNode(self.graph, node)
+                id_to_node[np['id']] = node
+
+            segments = load_segments("Europe_seg.txt")
+            for seg in segments:
+                origin = id_to_node.get(seg['origin_id'])
+                dest = id_to_node.get(seg['dest_id'])
+                if origin and dest:
+                    segment_name = f"{origin.name}-{dest.name}"
+                    AddSegment(self.graph, segment_name, origin.name, dest.name)
+
+            self.plot_graph()
+            messagebox.showinfo("Carga Completa", "Espacio aéreo de Europa cargado correctamente.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al cargar los datos de Europa: {e}")
 
 
 

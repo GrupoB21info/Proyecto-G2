@@ -39,24 +39,45 @@ def GetClosest(g, x, y):
     return min(g.nodes, key=lambda n: math.sqrt((n.x - x) ** 2 + (n.y - y) ** 2))
 
 def Plot(g):
+    import matplotlib.pyplot as plt
+    plt.figure(figsize=(14, 10))
+    plt.clf()
+
     for node in g.nodes:
-        plt.plot(node.x, node.y, 'o')
-        plt.text(node.x, node.y, node.name)
+        plt.plot(node.x, node.y, 'o', color='blue')
+        plt.text(node.x + 0.1, node.y + 0.1, node.name, fontsize=7,
+                 bbox=dict(facecolor='white', alpha=0.6, edgecolor='none'))
+
     for s in g.segments:
         x_vals = [s.origin.x, s.destination.x]
         y_vals = [s.origin.y, s.destination.y]
-        color = getattr(s, 'color', 'black')
-        plt.plot(x_vals, y_vals, color=color, linewidth=2)
+        color = getattr(s, 'color', 'gray')
+        plt.plot(x_vals, y_vals, color=color, linewidth=1)
         cx = (s.origin.x + s.destination.x) / 2
         cy = (s.origin.y + s.destination.y) / 2
-        plt.text(cx, cy, f"{s.cost:.2f}")
-    plt.show()
+        plt.text(cx, cy, f"{s.cost:.2f}", fontsize=6)
+
+
+    if g.nodes:
+        xs = [n.x for n in g.nodes]
+        ys = [n.y for n in g.nodes]
+        plt.xlim(min(xs) - 1, max(xs) + 1)
+        plt.ylim(min(ys) - 1, max(ys) + 1)
+
+    plt.title("Grafo")
+    plt.xlabel("X")
+    plt.ylabel("Y")
+    plt.grid(alpha=0.3)
+
+    return plt.gcf()
 
 def PlotNode(g, name):
+    plt.figure(figsize=(14, 10))
+    plt.clf()
     node = next((n for n in g.nodes if n.name == name), None)
     if not node:
         return False
-    plt.figure()
+
     for n in g.nodes:
         color = 'gray'
         if n == node:
@@ -64,7 +85,8 @@ def PlotNode(g, name):
         elif n in node.neighbors:
             color = 'green'
         plt.plot(n.x, n.y, 'o', color=color)
-        plt.text(n.x, n.y, n.name)
+        plt.text(n.x + 0.1, n.y + 0.1, n.name, fontsize=7)
+
     for s in g.segments:
         if s.origin == node and s.destination in node.neighbors:
             plt.plot([s.origin.x, s.destination.x], [s.origin.y, s.destination.y], 'r-')
@@ -73,8 +95,19 @@ def PlotNode(g, name):
             plt.text(cx, cy, f"{s.cost:.2f}")
         else:
             plt.plot([s.origin.x, s.destination.x], [s.origin.y, s.destination.y], 'k--', alpha=0.3)
-    plt.show()
-    return True
+    if g.nodes:
+        xs = [n.x for n in g.nodes]
+        ys = [n.y for n in g.nodes]
+        plt.xlim(min(xs) - 1, max(xs) + 1)
+        plt.ylim(min(ys) - 1, max(ys) + 1)
+
+    plt.title(f"Vecinos de {name}")
+    plt.xlabel("X")
+    plt.ylabel("Y")
+    plt.grid(alpha=0.3)
+
+    return plt.gcf()
+
 def LoadGraphFromFile(filename):
     g = Graph()
     try:
@@ -149,3 +182,16 @@ def GetReachableNodes(G, start_name):
             queue.extend([n for n in node.neighbors if n not in visited])
 
     return list(visited)
+
+def CreateGraph_2():
+    G = Graph()
+
+    AddNode(G, Node("X", 1, 1))
+    AddNode(G, Node("Y", 4, 1))
+    AddNode(G, Node("Z", 2.5, 4))
+    AddNode(G, Node("A", 3, 3))
+    AddSegment(G, "XY", "X", "Y")
+    AddSegment(G, "YZ", "Y", "Z")
+    AddSegment(G, "ZA", "Z", "A")
+    AddSegment(G, "AX", "A", "X")
+    return G
