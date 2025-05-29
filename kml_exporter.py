@@ -9,11 +9,10 @@ def export_path_to_kml(path_or_graph, filename):
 <name>Exportación de Nodos</name>
 """)
 
-        # Detectar si es una ruta (camino más corto)
         if hasattr(path_or_graph, 'nodes') and isinstance(path_or_graph.nodes, list):
             nodes = path_or_graph.nodes
 
-            # Dibujar cada nodo como punto
+
             for node in nodes:
                 f.write(f"""
 <Placemark>
@@ -24,7 +23,7 @@ def export_path_to_kml(path_or_graph, filename):
 </Placemark>
 """)
 
-            # Dibujar la línea de la ruta
+
             f.write("""
 <Placemark>
     <name>Ruta completa</name>
@@ -47,7 +46,7 @@ def export_path_to_kml(path_or_graph, filename):
 """)
 
         else:
-            # Caso: grafo completo → solo los nodos como puntos
+
             for node in path_or_graph.nodes:
                 f.write(f"""
 <Placemark>

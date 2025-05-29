@@ -12,7 +12,8 @@ from kml_exporter import export_path_to_kml
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 
-#Aclarar que todas las acotaciones que hay en el codigo han sido hechas por nosotros con el objetivo de que se entendiera mejor.
+#Aclarar que todas las acotaciones que hay en la interface han sido hechas por nosotros con el objetivo de que se entendiera mejor.
+
 class GraphApp:
     def __init__(self, root):
         self.airspace = None
@@ -25,38 +26,32 @@ class GraphApp:
         self.ruta_actual = None
         self.canvas_widget = None
 
+#Creamos los botones de la interface grafica.
+#Las funciones estan ordenadas de la misma forma que los botones.
 
     def create_widgets(self):
-        # Cargar imágenes decorativas
+
+        #Botones de los elementos decorativos
         self.img_left = tk.PhotoImage(file="foto-izquierda.png")
         self.img_right = tk.PhotoImage(file="foto-derecha.png")
 
-        # Mostrar imagen izquierda en la esquina superior izquierda
         self.left_label = tk.Label(self.root, image=self.img_left, bg="#f5f5dc")
         self.left_label.place(x=0, y=0, anchor="nw")
 
-        # Mostrar imagen derecha en la esquina superior derecha
         self.right_label = tk.Label(self.root, image=self.img_right, bg="#f5f5dc")
         self.right_label.place(relx=1.0, y=0, anchor="ne")
 
-        # Panel marrón oscuro que contiene los botones
         panel_frame = tk.Frame(self.root, bg="#513728", padx=6, pady=6)
         panel_frame.pack(pady=10)
 
-        # Frame claro encima del panel oscuro donde van los botones
         frame = tk.Frame(panel_frame, bg="#f5f5dc")
         frame.pack()
         frame.pack(pady=10)
 
-        panel_frame = tk.Frame(self.root, bg="#513728", padx=6, pady=6)
-        panel_frame.pack(pady=10)
-
-        # Frame claro encima del panel oscuro donde van los botones
-        frame = tk.Frame(panel_frame, bg="#f5f5dc")
-        frame.pack()
         self.canvas_frame = tk.Frame(self.root, bg="#f5f5dc")
         self.canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
+        #Botones de las funcionalidades.
         tk.Button(frame, text="Mostrar Grafo Ejemplo", command=self.load_example, bg="#8B4513", fg="white",
                   activebackground="#A0522D").grid(row=0, column=0, padx=5)
         tk.Button(frame, text="Mostrar Grafo Inventado", command=self.load_custom, bg="#8B4513", fg="white",
@@ -90,7 +85,7 @@ class GraphApp:
                   activebackground="#A0522D").grid(row=5, column=2, pady=5)
         tk.Button(frame, text="Mostrar en Google Earth", command=self.mostrar_en_google_earth, bg="#8B4513", fg="white",
                   activebackground="#A0522D").grid(row=4, column=3,
-                                                   pady=5)
+                                                        pady=5)
         tk.Button(frame, text="Equipazo", command=self.mostrar_foto_grupo, bg="#8B4513", fg="white",
                   activebackground="#A0522D").grid(row=5, column=3, pady=5)
         tk.Button(frame, text="Sorpresa", command=self.mostrar_sorpresa, bg="#8B4513", fg="white",
@@ -98,7 +93,7 @@ class GraphApp:
         self.node_entry = tk.Entry(frame)
         self.node_entry.grid(row=1, column=1)
 
-
+    #Utilizamos esta funcion para juntar los graficos con los botones.
     def mostrar_figura_en_canvas(self, fig):
         if self.canvas_widget:
             self.canvas_widget.get_tk_widget().destroy()
@@ -116,7 +111,7 @@ class GraphApp:
 
 
     def load_custom(self):
-        plt.clf()
+        plt.clf() #Limpia la figura anterior para que no se sobrepongan
         self.graph = CreateGraph_2()
         fig = Plot(self.graph)
         self.mostrar_figura_en_canvas(fig)
@@ -133,7 +128,7 @@ class GraphApp:
         try:
             self.graph = LoadGraphFromFile(path)
 
-            # Limpia figura anterior y muestra el grafo
+
             plt.clf()
             fig = Plot(self.graph)
 
@@ -283,8 +278,8 @@ class GraphApp:
 
     def new_graph(self):
         self.graph = Graph()
-        self.ruta_actual = None  # Reinicia ruta si había alguna
-        plt.clf()  # Limpia la figura actual de matplotlib
+        self.ruta_actual = None
+        plt.clf()
 
         if self.canvas_widget:
             self.canvas_widget.get_tk_widget().destroy()
@@ -519,13 +514,10 @@ class GraphApp:
             return
 
         try:
-
             if self.ruta_actual:
                 export_path_to_kml(self.ruta_actual, filename)
             else:
                 export_path_to_kml(self.graph, filename)
-
-            # Se abre automáticamente en Google Earth (Windows)
             try:
                 os.startfile(filename)
             except Exception:

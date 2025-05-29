@@ -15,20 +15,17 @@ def AddNode(g, n):
     return True
 
 def AddSegment(graph, name, origin_name, dest_name):
-    """
-    Crea un segmento entre dos nodos y los conecta como vecinos.
-    """
+
     origin = next((n for n in graph.nodes if n.name == origin_name), None)
     dest = next((n for n in graph.nodes if n.name == dest_name), None)
 
     if origin and dest:
-        # Crear el segmento
         segment = Segment(name, origin, dest)
         graph.segments.append(segment)
 
-        # Conectar nodos como vecinos
+
         AddNeighbor(origin, dest)
-        AddNeighbor(dest, origin)  # Bidireccional
+        AddNeighbor(dest, origin)
 
         return True
 
@@ -165,9 +162,7 @@ def FindShortestPath(G, origin_name, dest_name):
     return None
 
 def GetReachableNodes(G, start_name):
-    """
-    Retorna una lista de nodos alcanzables desde el nodo inicial.
-    """
+
     start = next((n for n in G.nodes if n.name == start_name), None)
     if not start:
         return []

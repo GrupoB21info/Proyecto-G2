@@ -5,7 +5,6 @@ def load_navpoints(filename):
         for line in f:
             line = line.strip()
             if not line or not line[0].isdigit():
-                # Ignorar líneas vacías y encabezados (que no empiezan con dígito)
                 continue
 
             parts = line.split()
@@ -52,13 +51,9 @@ def load_airports(filename):
         for line in f:
             line = line.strip()
             if not line or line.startswith('·') or line.lower().startswith('airports'):
-                # Ignorar líneas vacías, cabeceras o separadores
                 continue
 
-            # Detectar nombres de aeropuerto (mayúsculas o formatos conocidos)
-            # Ejemplo simplificado: una línea solo con nombre de aeropuerto
             if line.isupper() and len(line) <= 5:
-                # Guardar aeropuerto anterior
                 if current_airport:
                     airports.append({'name': current_airport, 'SIDs': sids, 'STARs': stars})
                 current_airport = line
@@ -66,9 +61,7 @@ def load_airports(filename):
                 stars = []
                 continue
 
-            # Si la línea no es un aeropuerto, interpretar SIDs y STARs
-            # Ejemplo: "ALT.D …other departures (SIDs)"
-            if 'D' in line and '.' in line:  # simplificado para ejemplo
+            if 'D' in line and '.' in line:
                 sids.append(line)
             elif 'A' in line and '.' in line:
                 stars.append(line)
