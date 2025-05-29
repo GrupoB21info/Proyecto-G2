@@ -102,6 +102,7 @@ class GraphApp:
     def mostrar_figura_en_canvas(self, fig):
         if self.canvas_widget:
             self.canvas_widget.get_tk_widget().destroy()
+            self.canvas_widget=None
         self.canvas_widget = FigureCanvasTkAgg(fig, master=self.canvas_frame)
         self.canvas_widget.draw()
         self.canvas_widget.get_tk_widget().pack(fill=tk.BOTH, expand=True)
@@ -367,6 +368,7 @@ class GraphApp:
     def plot_airspace(self):
 
         import matplotlib.pyplot as plt
+        plt.clf()
 
         if not self.airspace.navpoints:
             messagebox.showwarning("Advertencia", "No hay datos cargados para Catalunya.")
@@ -508,21 +510,29 @@ class GraphApp:
             messagebox.showerror("Error", f"Error al cargar los datos de Europa: {e}")
 
     def mostrar_en_google_earth(self):
-        global ruta_actual
-        if not self.ruta_actual:
-            messagebox.showinfo("Ruta no disponible", "Primero debes calcular una ruta.")
+        filename = filedialog.asksaveasfilename(
+            defaultextension=".kml",
+            filetypes=[("KML files", "*.kml")],
+            title="Guardar archivo KML"
+        )
+        if not filename:
             return
 
-        filename = filedialog.asksaveasfilename(defaultextension=".kml",
-                                                filetypes=[("KML files", "*.kml")],
-                                                title="Guardar archivo KML")
-        if filename:
-            export_path_to_kml(self.ruta_actual, filename)
+        try:
+
+            if self.ruta_actual:
+                export_path_to_kml(self.ruta_actual, filename)
+            else:
+                export_path_to_kml(self.graph, filename)
+
+            # Se abre automáticamente en Google Earth (Windows)
             try:
-                os.startfile(filename)  # Funciona en Windows
+                os.startfile(filename)
             except Exception:
                 messagebox.showinfo("Archivo KML generado",
-                                    f"Guardado en: {filename}\nÁbrelo manualmente si Google Earth no se abre.")
+                                    f"Guardado en: {filename}\nÁbrelo manualmente en Google Earth.")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo exportar el archivo KML:\n{e}")
 
     def mostrar_foto_grupo(self):
         win = tk.Toplevel(self.root)
